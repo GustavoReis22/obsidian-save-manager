@@ -30,13 +30,19 @@ def git_push():
 
 def git_pull():
     clear()
+    verify_response= verify_update_local
+    if verify_response:
+        subprocess.run(["git", "stash"], capture_output=True, text=True)
     response= subprocess.run(["git", "pull"], capture_output=True, text=True)
     if response.returncode != 0:
         print("Erro ao fazer pull:")
         print(response.stderr)
     else:
         print("Atulização feita com sucesso")
+    if verify_response:
+        subprocess.run(["git", "stash", "pop"], capture_output=True, text=True)
     input("Ação finalizada. Pressione ENTER para voltar ao menu")
+
 	
 def clear():
     os.system("cls" if os.name == "nt" else "clear")
@@ -45,6 +51,19 @@ def pull_cloud():
     print("Puxando arquivos da nuvem, aguarde alguns instantes!")
     subprocess.run(["git", "fetch"], capture_output= True)
     clear()
+
+def open_repository():
+    clear()
+    
+    url_repository= ((subprocess.run (["git", "remote", "-v"], capture_output= True, text=True)).stdout)
+    url_repository= url_repository[url_repository.find("h"):(url_repository.find("(")-1)]
+    response_open_link= subprocess.run(f"start {url_repository}", shell= True, capture_output=True, text=True)
+    if response_open_link.returncode != 0:
+        print("Erro ao tentar abrir o repositorio:")
+        print(response_open_link.stderr)
+    else:
+        print("Repositorio aberto com sucesso")
+        input("Ação finalizada. Pressione ENTER para voltar ao menu")
 
 def verify_update_cloud():
     response= subprocess.run(["git", "status"], capture_output= True, text= True)
@@ -60,29 +79,46 @@ def verify_update_local():
     else:
         return False
 
+def verify_update_all():
+    response_update_cloud= verify_update_cloud()
+    response_update_local= verify_update_local()
+    return {"response_cloud": response_update_cloud, "response_local": response_update_local}
+
+def default_layout():
+    print("-"*35)
+    print(" Gerenciamento de Save do Obsidian")
+    print("-"*35)
+    print("Opções: ")
+    print(" 1- Ver status\n",
+        "2- Fazer salvamento no GitHub\n",
+        "3- Fazer Atualização do conteúdo local\n",
+        "4- Abrir repositorio no GitHub\n",
+        "5- Fechar terminal")
+
 if __name__ == "__main__":
     pull_cloud()
     while(True):
         clear()
-        print("-"*35)
-        print(" Gerenciamento de Save do Obsidian")
-        print("-"*35)
-        print("Opções: ")
-        print(" 1- Ver status\n",
-			"2- Fazer salvamento no GitHub\n",
-			"3- Fazer Atualização do conteúdo local\n",
-			"4- Fechar terminal")
+        default_layout()
 
-        response_update_cloud= verify_update_cloud()
-        response_update_local= verify_update_local()
+        response_update_all= verify_update_all()
 
-        if (response_update_cloud == True) and (response_update_local == True):
-            print("AVISO: a versão em cloude e a local tem atulizações.\n      "
+        if (response_update_all["response_cloud"]) and (response_update_all["response_local"]):
+            print("AVISO: a versão em nuvem e a local tem atulizações.\n      "
                         "Talvez isso pode gerar conflito!")
-        elif response_update_local == True:
+            response_conflict= input("Deseja resolver esse conflito? (y/n) > ").replace(" ", "").lower()
+            if "y" == response_conflict:
+                git_pull()
+                clear()
+                default_layout()
+            else:
+                clear()
+                default_layout()
+                print("AVISO: A versão local do conteudo tem atulizações!")
+        elif response_update_all["response_local"]:
             print("AVISO: A versão local do conteudo tem atulizações!")
-        elif response_update_cloud == True:
-            print("AVISO: A versão em cloud do conteudo tem atualizações!")
+        elif response_update_all["response_cloud"]:
+            print("AVISO: A versão em nuvem do conteudo tem atualizações!")
 
         option_resp= input("Escolha uma opção: ")
         if option_resp == "1":
@@ -92,8 +128,10 @@ if __name__ == "__main__":
         elif option_resp == "3":
             git_pull()
         elif option_resp == "4":
+            open_repository()
+        elif option_resp == "5":
             break
         else:
             clear()
-            print("Selecione uma opção valida!")
+            print(f"Selecione uma opção valida!")
             time.sleep(2)
