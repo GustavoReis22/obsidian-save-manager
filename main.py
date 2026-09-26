@@ -1,4 +1,5 @@
 from datetime import datetime
+import urllib.request
 import subprocess
 import time
 import os
@@ -84,6 +85,13 @@ def verify_update_all():
     response_update_local= verify_update_local()
     return {"response_cloud": response_update_cloud, "response_local": response_update_local}
 
+def verify_network():
+    try:
+        urllib.request.urlopen("https://google.com", timeout=3)
+        return True
+    except Exception:
+        return False
+
 def default_layout():
     print("-"*35)
     print(" Gerenciamento de Save do Obsidian")
@@ -99,39 +107,50 @@ if __name__ == "__main__":
     pull_cloud()
     while(True):
         clear()
-        default_layout()
 
-        response_update_all= verify_update_all()
-
-        if (response_update_all["response_cloud"]) and (response_update_all["response_local"]):
-            print("AVISO: a versão em nuvem e a local tem atulizações.\n      "
-                        "Talvez isso pode gerar conflito!")
-            response_conflict= input("Deseja resolver esse conflito? (y/n) > ").replace(" ", "").lower()
-            if "y" == response_conflict:
-                git_pull()
+        print("Verificando conexão com a internet...")
+        responde_network= verify_network()
+        if responde_network == False:
+            timer= 4
+            for i in range(timer):
                 clear()
-                default_layout()
-            else:
-                clear()
-                default_layout()
-                print("AVISO: A versão local do conteudo tem atulizações!")
-        elif response_update_all["response_local"]:
-            print("AVISO: A versão local do conteudo tem atulizações!")
-        elif response_update_all["response_cloud"]:
-            print("AVISO: A versão em nuvem do conteudo tem atualizações!")
-
-        option_resp= input("Escolha uma opção: ")
-        if option_resp == "1":
-            git_status()
-        elif option_resp == "2":
-            git_push()
-        elif option_resp == "3":
-            git_pull()
-        elif option_resp == "4":
-            open_repository()
-        elif option_resp == "5":
+                print("Não foi possivel encontrar uma conexção com a internet")
+                print(f"Esse terminal sera fechado em: {timer}")
+                timer-=1
+                time.sleep(1)
             break
         else:
-            clear()
-            print(f"Selecione uma opção valida!")
-            time.sleep(2)
+            default_layout()
+            response_update_all= verify_update_all()
+
+            if (response_update_all["response_cloud"]) and (response_update_all["response_local"]):
+                print("AVISO: a versão em nuvem e a local tem atulizações.\nTalvez isso pode gerar conflito!")
+                response_conflict= input("Deseja resolver esse conflito? (y/n) > ").replace(" ", "").lower()
+                if "y" == response_conflict:
+                    git_pull()
+                    clear()
+                    default_layout()
+                else:
+                    clear()
+                    default_layout()
+                    print("AVISO: A versão local do conteudo tem atulizações!")
+            elif response_update_all["response_local"]:
+                print("AVISO: A versão local do conteudo tem atulizações!")
+            elif response_update_all["response_cloud"]:
+                print("AVISO: A versão em nuvem do conteudo tem atualizações!")
+
+            option_resp= input("Escolha uma opção: ")
+            if option_resp == "1":
+                git_status()
+            elif option_resp == "2":
+                git_push()
+            elif option_resp == "3":
+                git_pull()
+            elif option_resp == "4":
+                open_repository()
+            elif option_resp == "5":
+                break
+            else:
+                clear()
+                print(f"Selecione uma opção valida!")
+                time.sleep(2)
