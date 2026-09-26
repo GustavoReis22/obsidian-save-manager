@@ -104,22 +104,20 @@ def default_layout():
         "5- Fechar terminal")
 
 if __name__ == "__main__":
-    pull_cloud()
-    while(True):
-        clear()
-
-        print("Verificando conexão com a internet...")
-        responde_network= verify_network()
-        if responde_network == False:
-            timer= 4
-            for i in range(timer):
-                clear()
-                print("Não foi possivel encontrar uma conexção com a internet")
-                print(f"Esse terminal sera fechado em: {timer}")
-                timer-=1
-                time.sleep(1)
-            break
-        else:
+    print("Verificando conexão com a internet...")
+    responde_network= verify_network()
+    if responde_network == False:
+        timer= 3
+        for i in range(timer):
+            clear()
+            print("Não foi possivel encontrar uma conexção com a internet")
+            print(f"Esse terminal sera fechado em: {timer}")
+            timer-=1
+            time.sleep(1)
+    else:
+        pull_cloud()
+        while(True):
+            clear()
             default_layout()
             response_update_all= verify_update_all()
 
